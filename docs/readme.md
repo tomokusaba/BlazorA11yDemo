@@ -8,7 +8,7 @@ published: false
 
 # はじめに
 
-前回の記事「[Webアクセシビリティは"もしも"に備える設計](https://zenn.dev/tomokusaba/articles/93810f232cec91)」では、アクセシビリティの考え方や設計指針について解説しました🧭
+前回の記事「[Webアクセシビリティは"もしも"に備える設計](https://qiita.com/tomokusaba/items/9b88360daa685accb33a)」では、アクセシビリティの考え方や設計指針について解説しました🧭
 今回はその実践編として、**CI/CDパイプラインでアクセシビリティを自動検査する仕組み**を構築していきます🔧
 
 本記事では、**Blazor WebAssembly** を **Azure Static Web Apps** にホストする構成を題材に、**環境構築からGitHub Actionsでの自動化まで**を一気通貫で実装します🚀
