@@ -19,7 +19,7 @@ published: false
 
 1. 📦 Playwright C# + axe-coreでアクセシビリティテストを書く
 2. 🔄 GitHub ActionsでPRごとに自動実行する
-3. � 違反があればGitHub Actions Summaryに出力する（CIは止めない）
+3. 📊 違反があればGitHub Actions Summaryに出力する（CIは止めない）
 
 # 前提条件
 
