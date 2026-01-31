@@ -19,7 +19,7 @@ published: false
 
 1. 📦 Playwright C# + axe-coreでアクセシビリティテストを書く
 2. 🔄 GitHub ActionsでPRごとに自動実行する
-3. 💬 違反があればPRにコメントで通知する
+3. � 違反があればGitHub Actions Summaryに出力する（CIは止めない）
 
 # 前提条件
 
@@ -27,17 +27,9 @@ published: false
 - ✅ Visual Studio 2022 または VS Code
 - ✅ GitHub リポジトリがある
 - ✅ Azure サブスクリプション（Static Web Appsデプロイ用）
-- ✅ SWA CLI 2.0.2以上（`npm install -g @azure/static-web-apps-cli`）
 
-:::message alert
-**SWA CLI バージョンに関する重要な注意** ⚠️
-
-Microsoft は SWA CLI のセキュリティ強化のため、バージョン 2.0.2 以上へのアップグレードを必須としています。
-古いバージョンを使用している場合は、必ず最新版にアップデートしてください。
-
-```powershell
-npm install -g @azure/static-web-apps-cli@latest
-```
+:::message
+**注意**: CI環境では `npx serve` を使用してBlazor WASMを配信します。SWA CLIはローカル開発でのみ使用します。
 :::
 
 # なぜCI/CDでアクセシビリティをチェックするのか？
@@ -376,11 +368,11 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────
-  # アクセシビリティテスト（PRごとに実行）
+  # ビルド＆アクセシビリティテスト（PRごとに実行）
   # ─────────────────────────────────────────────
-  accessibility_test:
+  build_and_test:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v4
@@ -390,88 +382,129 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install SWA CLI
-        run: npm install -g @azure/static-web-apps-cli
-
       - name: Restore & Build
         run: dotnet build
 
       - name: Publish Blazor WASM
-        run: dotnet publish BlazorA11yDemo.Client -c Release
+        run: dotnet publish BlazorA11yDemo.Client -c Release -o ./publish
+
+      - name: Verify publish output
+        run: |
+          echo "=== Publish output contents ==="
+          ls -la ./publish/wwwroot/
+          echo "=== Checking index.html (first 20 lines) ==="
+          head -20 ./publish/wwwroot/index.html
 
       - name: Install Playwright
-        run: pwsh BlazorA11yDemo.Tests/bin/Debug/net9.0/playwright.ps1 install chromium
+        run: pwsh BlazorA11yDemo.Tests/bin/Debug/net9.0/playwright.ps1 install chromium --with-deps
 
-      - name: Start SWA Emulator
+      - name: Start HTTP Server
         run: |
-          # SWA CLIでポート4280でサーブ（CI環境では固定ポートを使用）
-          npx --yes @azure/static-web-apps-cli start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot --port 4280 &
-          sleep 15
-        shell: bash
+          # npx serveでBlazor WASMをサーブ（ポート4280）
+          echo "Starting HTTP server on port 4280..."
+          npx --yes serve ./publish/wwwroot -l 4280 &
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          
+          # サーバー起動を待機
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:4280 | grep -q "200"; then
+              echo "✅ Server is ready! (attempt $i)"
+              break
+            fi
+            echo "Waiting... (attempt $i)"
+            sleep 1
+          done
+          
+          # 最終確認
+          curl -I http://localhost:4280 || echo "⚠️ Server may not be fully ready"
 
       - name: Run Accessibility Tests
-        run: dotnet test BlazorA11yDemo.Tests --no-build --logger "trx;LogFileName=results.trx"
+        id: a11y_test
+        continue-on-error: true  # テスト失敗でもCIを止めない
+        run: |
+          dotnet test BlazorA11yDemo.Tests --no-build \
+            --logger "trx;LogFileName=results.trx" \
+            --logger "console;verbosity=detailed" \
+            2>&1 | tee test-output.txt
+          echo "TEST_EXIT_CODE=$?" >> $GITHUB_ENV
         env:
-          BaseUrl: 'http://localhost:4280'  # SWA CLIのポートに合わせる
+          BaseUrl: 'http://localhost:4280'
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          echo "## ♿ アクセシビリティテスト結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f test-output.txt ]; then
+            if grep -q "アクセシビリティ違反" test-output.txt; then
+              echo "### ⚠️ 違反が検出されました" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep -A 50 "アクセシビリティ違反" test-output.txt | head -100 >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            elif grep -q "Passed:" test-output.txt; then
+              echo "### ✅ すべてのテストに合格しました" >> $GITHUB_STEP_SUMMARY
+              grep "Passed:" test-output.txt >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### 📋 テスト出力" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              tail -50 test-output.txt >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: accessibility-results
-          path: BlazorA11yDemo.Tests/TestResults/
+          path: |
+            BlazorA11yDemo.Tests/TestResults/
+            test-output.txt
 
-      - name: Comment on PR (on failure)
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: Upload publish output for deploy
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## ♿ アクセシビリティテストが失敗しました\n\n[Actionsの結果を確認](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-            })
+          name: publish-output
+          path: ./publish/wwwroot/
 
   # ─────────────────────────────────────────────
   # Static Web Appsへデプロイ
   # ─────────────────────────────────────────────
   deploy:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: |
+      (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed'))
+      && vars.ENABLE_DEPLOY == 'true'
     runs-on: ubuntu-latest
-    needs: accessibility_test  # テスト成功後にデプロイ
+    needs: build_and_test
     name: Deploy to SWA
     
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Download publish output
+        uses: actions/download-artifact@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Publish Blazor WASM
-        run: dotnet publish BlazorA11yDemo.Client -c Release -o publish
+          name: publish-output
+          path: ./publish/wwwroot/
 
       - name: Build And Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GRAY_MEADOW_072FA5010 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "publish/wwwroot"
+          app_location: "./publish/wwwroot"
           skip_app_build: true
 
   # ─────────────────────────────────────────────
   # PRクローズ時にプレビュー環境を削除
   # ─────────────────────────────────────────────
   close_pull_request:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && vars.ENABLE_DEPLOY == 'true'
     runs-on: ubuntu-latest
     name: Close Pull Request
     
@@ -479,46 +512,73 @@ jobs:
       - name: Close Pull Request
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GRAY_MEADOW_072FA5010 }}
           action: "close"
 ```
 
 :::message
 **ワークフローのポイント** 🎯
 
-1. **accessibility_test**: PRごとにアクセシビリティテストを実行（Windows）
-2. **deploy**: テスト成功後にStatic Web Appsへデプロイ（Linux）
-3. **close_pull_request**: PRマージ/クローズ時にプレビュー環境を削除
-
-テストが失敗すると `needs: accessibility_test` によりデプロイがブロックされます！
+1. **build_and_test**: ビルド → HTTPサーバー起動 → アクセシビリティテスト実行
+2. **continue-on-error: true**: テスト失敗でもCIは止めず、結果をSummaryに出力
+3. **npx serve**: SWA CLIより軽量で安定したHTTPサーバー
+4. **deploy**: `ENABLE_DEPLOY=true` の場合のみStatic Web Appsへデプロイ
+5. **close_pull_request**: PRマージ/クローズ時にプレビュー環境を削除
 :::
 
 ## 3.2 Azure Static Web Appsのセットアップ
 
-Azure PortalでStatic Web Appsリソースを作成し、`AZURE_STATIC_WEB_APPS_API_TOKEN`を取得してGitHub Secretsに設定します🔐
+Azure PortalでStatic Web Appsリソースを作成し、シークレットとVariableを設定します🔐
 
-1. Azure Portal → Static Web Apps → 作成
-2. GitHubリポジトリを連携
-3. デプロイトークンを取得
-4. GitHub → Settings → Secrets → `AZURE_STATIC_WEB_APPS_API_TOKEN` を追加
+### シークレットの設定
+
+1. Azure Portal → Static Web Apps → 対象のリソース
+2. 「デプロイトークンの管理」からトークンをコピー
+3. GitHub → Settings → Secrets and variables → Actions → Secrets
+4. シークレット名はAzureが自動生成したワークフローに合わせる（例: `AZURE_STATIC_WEB_APPS_API_TOKEN_GRAY_MEADOW_072FA5010`）
+
+### デプロイの有効化
+
+デプロイを有効にするには、GitHub Variableを設定します：
+
+1. GitHub → Settings → Secrets and variables → Actions → Variables
+2. `ENABLE_DEPLOY` = `true` を追加
+
+| 設定 | キー | 値 |
+|------|------|-----|
+| Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN_*` | Azureのデプロイトークン |
+| Variable | `ENABLE_DEPLOY` | `true`（デプロイを有効にする場合）|
+
+:::message alert
+**注意**: `ENABLE_DEPLOY` が未設定または `false` の場合、デプロイジョブはスキップされます。
+アクセシビリティテストの検証だけを行いたい場合は、この変数を設定しないでください。
+:::
 
 # Step 4: 段階的な導入戦略
 
 いきなり全ての違反でCIを止めるのは現実的ではありません🧭
 
+## 現在の設定（可視化フェーズ）
+
+本ワークフローでは `continue-on-error: true` を使用しているため、アクセシビリティ違反があってもCIは止まりません。
+違反はGitHub Actions Summaryに出力され、開発者が確認できます。
+
 ## 段階的なロールアウト
 
 | Phase | 期間 | 設定 |
 |-------|------|------|
-| 📊 可視化 | 最初の2週間 | 違反を記録するがCIは落とさない |
+| 📊 可視化（現在） | 最初の2週間 | `continue-on-error: true` で違反を記録するがCIは落とさない |
 | ⚠️ 重大のみ | 3〜4週目 | Critical/Seriousのみブロック |
-| 🛡️ 全違反 | 5週目以降 | 全ての違反でCIを止める |
+| 🛡️ 全違反 | 5週目以降 | `continue-on-error: false` で全ての違反でCIを止める |
 
-Phase 1では、テストの最後に `|| true` を追加してCIを落とさないようにします：
+Phase 3に移行する場合は、ワークフローから `continue-on-error: true` を削除してください：
 
 ```yaml
 - name: Run Accessibility Tests
-  run: dotnet test BlazorA11yDemo.Tests --no-build || true
+  id: a11y_test
+  # continue-on-error: true  # この行を削除またはコメントアウト
+  run: |
+    dotnet test BlazorA11yDemo.Tests --no-build
 ```
 
 # よくある違反と修正方法
@@ -573,16 +633,18 @@ Phase 1では、テストの最後に `|| true` を追加してCIを落とさな
 ## 実装したこと
 
 1. ✅ Blazor WebAssembly を Static Web Apps にホスト
-2. ✅ SWA CLI でローカルエミュレーション
+2. ✅ `npx serve` でCI環境でのHTTPサーバー起動
 3. ✅ Playwright C# + axe-core で WCAG 2.1 AA 検査
-4. ✅ テスト失敗時はデプロイをブロック
-5. ✅ PRごとにプレビュー環境を自動作成
+4. ✅ `continue-on-error: true` でテスト失敗でもCIを止めない
+5. ✅ GitHub Actions Summaryにテスト結果を出力
+6. ✅ `ENABLE_DEPLOY` 変数でデプロイを制御
 
 ## 次のステップ
 
 - 🔧 認証が必要なページのテスト追加
 - 📊 テスト結果のダッシュボード化
 - 🧪 手動テストとの組み合わせ
+- 🛡️ 段階的にCIを厳格化（Phase 2, 3への移行）
 
 「自動で潰せるものは自動で潰し、人間の判断が必要なものに集中する」🤝
 これがCI/CDでアクセシビリティを担保する意義です♿
