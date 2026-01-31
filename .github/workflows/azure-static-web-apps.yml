@@ -26,14 +26,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install SWA CLI
-        run: npm install -g @azure/static-web-apps-cli
-
       - name: Restore & Build
         run: dotnet build
 
@@ -43,24 +35,29 @@ jobs:
       - name: Verify publish output
         run: |
           echo "=== Publish output contents ==="
-          ls -la ./publish/wwwroot/
+          Get-ChildItem ./publish/wwwroot/ -Recurse | Select-Object -First 30
           echo "=== Checking index.html ==="
-          head -20 ./publish/wwwroot/index.html
-        shell: bash
+          Get-Content ./publish/wwwroot/index.html -Head 20
 
       - name: Install Playwright
         run: pwsh BlazorA11yDemo.Tests/bin/Debug/net9.0/playwright.ps1 install chromium
 
-      - name: Start SWA Emulator
+      - name: Install dotnet-serve
+        run: dotnet tool install --global dotnet-serve
+
+      - name: Start HTTP Server
         run: |
-          # SWA CLIでポート4280でサーブ（CI環境では固定ポートを使用）
-          echo "Starting SWA CLI..."
-          npx --yes @azure/static-web-apps-cli start ./publish/wwwroot --port 4280 &
-          echo "Waiting for SWA CLI to start..."
-          sleep 30
-          echo "Testing if server is responding..."
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:4280 || true
-        shell: bash
+          # dotnet-serveでBlazor WASMをサーブ（ポート4280）
+          Start-Process -NoNewWindow -FilePath "dotnet" -ArgumentList "serve", "--directory", "./publish/wwwroot", "--port", "4280", "--default-extensions", "html"
+          Start-Sleep -Seconds 10
+          # サーバーが起動したか確認
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:4280" -UseBasicParsing -TimeoutSec 30
+            Write-Host "Server responded with status: $($response.StatusCode)"
+            Write-Host "Response length: $($response.Content.Length) bytes"
+          } catch {
+            Write-Host "Warning: Server check failed - $($_.Exception.Message)"
+          }
 
       - name: Run Accessibility Tests
         run: dotnet test BlazorA11yDemo.Tests --no-build --logger "trx;LogFileName=results.trx"
