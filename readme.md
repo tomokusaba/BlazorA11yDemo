@@ -1,125 +1,125 @@
 ---
-title: "WebアクセシビリティをCI/CDで担保する ― axe DevTools × Playwright C#実践ガイド"
+title: "WebアクセシビリチE��をCI/CDで拁E��すめE Eaxe DevTools ÁEPlaywright C#実践ガイチE
 emoji: "♿"
-type: "tech" # tech: 技術記事 / idea: アイデア
+type: "tech" # tech: 技術記亁E/ idea: アイチE��
 topics: ["accessibility", "playwright", "csharp", "staticwebapps", "azure"]
 published: false
 ---
 
 # はじめに
 
-前回の記事「[Webアクセシビリティは"もしも"に備える設計](https://zenn.dev/tomokusaba/articles/93810f232cec91)」では、アクセシビリティの考え方や設計指針について解説しました🧭
-今回はその実践編として、**CI/CDパイプラインでアクセシビリティを自動検査する仕組み**を構築していきます🔧
+前回の記事「[WebアクセシビリチE��は"もしめEに備える設訁E(https://zenn.dev/tomokusaba/articles/93810f232cec91)」では、アクセシビリチE��の老E��方めE��計指針につぁE��解説しました🧭
+今回はそ�E実践編として、E*CI/CDパイプラインでアクセシビリチE��を�E動検査する仕絁E��**を構築してぁE��ます🔧
 
-本記事では、**Blazor WebAssembly** を **Azure Static Web Apps** にホストする構成を題材に、**環境構築からGitHub Actionsでの自動化まで**を一気通貫で実装します🚀
+本記事では、E*Blazor WebAssembly** めE**Azure Static Web Apps** にホストする構�Eを題材に、E*環墁E��築からGitHub Actionsでの自動化まで**を一気通貫で実裁E��ます🚀
 
 # 今回のゴール
 
-以下の流れを実現します🎯
+以下�E流れを実現します🎯
 
-1. 📦 Playwright C# + axe-coreでアクセシビリティテストを書く
-2. 🔄 GitHub ActionsでPRごとに自動実行する
-3. 💬 違反があればPRにコメントで通知する
+1. 📦 Playwright C# + axe-coreでアクセシビリチE��チE��トを書ぁE
+2. 🔄 GitHub ActionsでPRごとに自動実行すめE
+3. 💬 違反があれ�EPRにコメントで通知する
 
 # 前提条件
 
-- ✅ .NET 10 SDK がインストール済み
-- ✅ Visual Studio 2022 または VS Code
-- ✅ GitHub リポジトリがある
-- ✅ Azure サブスクリプション（Static Web Appsデプロイ用）
-- ✅ SWA CLI 2.0.2以上（`npm install -g @azure/static-web-apps-cli`）
+- ✁E.NET 9 SDK がインスト�Eル済み
+- ✁EVisual Studio 2022 また�E VS Code
+- ✁EGitHub リポジトリがあめE
+- ✁EAzure サブスクリプション�E�Etatic Web AppsチE�Eロイ用�E�E
+- ✁ESWA CLI 2.0.2以上！Enpm install -g @azure/static-web-apps-cli`�E�E
 
 :::message alert
-**SWA CLI バージョンに関する重要な注意** ⚠️
+**SWA CLI バ�Eジョンに関する重要な注愁E* ⚠�E�E
 
-Microsoft は SWA CLI のセキュリティ強化のため、バージョン 2.0.2 以上へのアップグレードを必須としています。
-古いバージョンを使用している場合は、必ず最新版にアップデートしてください。
+Microsoft は SWA CLI のセキュリチE��強化�Eため、バージョン 2.0.2 以上へのアチE�Eグレードを忁E��としてぁE��す、E
+古ぁE��ージョンを使用してぁE��場合�E、忁E��最新版にアチE�EチE�Eトしてください、E
 
 ```powershell
 npm install -g @azure/static-web-apps-cli@latest
 ```
 :::
 
-# なぜCI/CDでアクセシビリティをチェックするのか？
+# なぜCI/CDでアクセシビリチE��をチェチE��するのか！E
 
-手動テストだけでは抜け漏れが発生しがちです😮
+手動チE��トだけでは抜け漏れが発生しがちです😮
 
-| 課題 | CI/CDで解決 |
+| 課顁E| CI/CDで解決 |
 |------|------------|
-| ⏰ 全ページを手動でチェックする時間がない | 自動で全ページを検査 |
-| 🔄 機能追加時に既存のa11yが壊れる | 回帰を即座に検出 |
-| 🧠 担当者の知識に依存する | ルールベースで一貫した検査 |
+| ⏰ 全ペ�Eジを手動でチェチE��する時間がなぁE| 自動で全ペ�Eジを検査 |
+| 🔄 機�E追加時に既存�Ea11yが壊れめE| 回帰を即座に検�E |
+| 🧠 拁E��老E�E知識に依存すめE| ルールベ�Eスで一貫した検査 |
 
-ただし、**自動テストで検出できるのは約30〜40%** です🧭
-代替テキストの「内容」が適切か、キーボード操作の「体験」が自然か、などは人間の判断が必要です。
-本記事では**自動で潰せるものを確実に潰す仕組み**を作ります🎯
+ただし、E*自動テストで検�Eできるのは紁E0、E0%** です🧭
+代替チE��スト�E「�E容」が適刁E��、キーボ�Eド操作�E「体験」が自然か、などは人間�E判断が忁E��です、E
+本記事では**自動で潰せるも�Eを確実に潰す仕絁E��**を作ります🎯
 
-# Step 1: プロジェクトのセットアップ
+# Step 1: プロジェクト�EセチE��アチE�E
 
-## 1.1 テストプロジェクトの作成
+## 1.1 チE��ト�Eロジェクト�E作�E
 
 ```powershell
-# 新しいソリューションを作成
+# 新しいソリューションを作�E
 mkdir BlazorA11yDemo
 cd BlazorA11yDemo
 dotnet new sln
 
-# Blazor WebAssemblyアプリを作成（Static Web Apps対応）
-dotnet new blazorwasm -n BlazorA11yDemo.Client -f net10.0
+# Blazor WebAssemblyアプリを作�E�E�Etatic Web Apps対応！E
+dotnet new blazorwasm -n BlazorA11yDemo.Client -f net9.0
 dotnet sln add BlazorA11yDemo.Client
 
-# テストプロジェクトを作成
-dotnet new xunit -n BlazorA11yDemo.Tests -f net10.0
+# チE��ト�Eロジェクトを作�E
+dotnet new xunit -n BlazorA11yDemo.Tests -f net9.0
 dotnet sln add BlazorA11yDemo.Tests
 
-# 必要なパッケージをインストール
+# 忁E��なパッケージをインスト�Eル
 cd BlazorA11yDemo.Tests
 dotnet add package Microsoft.Playwright
 dotnet add package Deque.AxeCore.Playwright
 dotnet add package Microsoft.Extensions.Configuration.Json
 dotnet add package Microsoft.Extensions.Configuration.EnvironmentVariables
 
-# ビルドしてPlaywrightブラウザをインストール
+# ビルドしてPlaywrightブラウザをインスト�Eル
 dotnet build
-pwsh bin/Debug/net10.0/playwright.ps1 install chromium
+pwsh bin/Debug/net9.0/playwright.ps1 install chromium
 ```
 
 :::message
-**なぜBlazor WebAssemblyを選ぶのか？** 🤔
+**なぜBlazor WebAssemblyを選ぶのか！E* 🤁E
 
-Azure Static Web Appsは静的ファイルホスティングに特化しており、Blazor WebAssembly（クライアントサイド）との相性が抜群です。サーバーレスでグローバル配信でき、無料プランもあります。
+Azure Static Web Appsは静的ファイルホスチE��ングに特化しており、Blazor WebAssembly�E�クライアントサイド）との相性が抜群です。サーバ�Eレスでグローバル配信でき、無料�Eランもあります、E
 :::
 
-## 1.2 プロジェクト構成
+## 1.2 プロジェクト構�E
 
-最終的なプロジェクト構成は以下のとおりです📁
+最終的なプロジェクト構�Eは以下�Eとおりです📁E
 
 ```
 BlazorA11yDemo/
 ├── BlazorA11yDemo.sln
-├── BlazorA11yDemo.Client/        # Blazor WebAssembly（Static Web Apps対応）
-│   ├── Pages/
-│   │   ├── Home.razor            # / (ホーム)
-│   │   ├── Counter.razor         # /counter (カウンター)
-│   │   └── Weather.razor         # /weather (天気予報)
-│   ├── wwwroot/
-│   └── Program.cs
+├── BlazorA11yDemo.Client/        # Blazor WebAssembly�E�Etatic Web Apps対応！E
+━E  ├── Pages/
+━E  ━E  ├── Home.razor            # / (ホ�Eム)
+━E  ━E  ├── Counter.razor         # /counter (カウンター)
+━E  ━E  └── Weather.razor         # /weather (天気予報)
+━E  ├── wwwroot/
+━E  └── Program.cs
 ├── BlazorA11yDemo.Tests/
-│   ├── BlazorA11yDemo.Tests.csproj
-│   ├── GlobalUsings.cs
-│   ├── AccessibilityTests.cs     # テストコード
-│   └── appsettings.json
-├── swa-cli.config.json           # SWA CLI設定
+━E  ├── BlazorA11yDemo.Tests.csproj
+━E  ├── GlobalUsings.cs
+━E  ├── AccessibilityTests.cs     # チE��トコーチE
+━E  └── appsettings.json
+├── swa-cli.config.json           # SWA CLI設宁E
 └── .github/
     └── workflows/
         └── azure-static-web-apps.yml
 ```
 
-# Step 2: テストコードの実装
+# Step 2: チE��トコード�E実裁E
 
 ## 2.1 GlobalUsings.cs
 
-よく使う名前空間をまとめておきます🧩
+よく使ぁE��前空間をまとめておきます🧩
 
 ```csharp
 global using Xunit;
@@ -130,8 +130,8 @@ global using Deque.AxeCore.Commons;
 
 ## 2.2 appsettings.json
 
-テスト対象のURLを設定ファイルで管理します📝
-ポート番号は `BlazorA11yDemo.Client/Properties/launchSettings.json` の `applicationUrl` に合わせてください。
+チE��ト対象のURLを設定ファイルで管琁E��ます📁E
+ポ�Eト番号は `BlazorA11yDemo.Client/Properties/launchSettings.json` の `applicationUrl` に合わせてください、E
 
 ```json
 {
@@ -140,15 +140,15 @@ global using Deque.AxeCore.Commons;
 ```
 
 :::message
-**ポート番号の確認方法** 🔍
+**ポ�Eト番号の確認方況E* 🔍
 
-`launchSettings.json` の `profiles` → `http` または `https` の `applicationUrl` を確認してください。
-テンプレート作成時にランダムなポートが割り当てられます。
+`launchSettings.json` の `profiles` ↁE`http` また�E `https` の `applicationUrl` を確認してください、E
+チE��プレート作�E時にランダムなポ�Eトが割り当てられます、E
 :::
 
-## 2.3 swa-cli.config.json（リポジトリルートに配置）
+## 2.3 swa-cli.config.json�E�リポジトリルートに配置�E�E
 
-SWA CLIの設定ファイルを作成します🛠️
+SWA CLIの設定ファイルを作�Eします🛠�E�E
 
 ```json
 {
@@ -156,7 +156,7 @@ SWA CLIの設定ファイルを作成します🛠️
   "configurations": {
     "blazor-a11y": {
       "appLocation": "BlazorA11yDemo.Client",
-      "outputLocation": "bin/Release/net10.0/publish/wwwroot",
+      "outputLocation": "bin/Release/net9.0/publish/wwwroot",
       "appBuildCommand": "dotnet publish -c Release",
       "run": "dotnet watch run",
       "appDevserverUrl": "http://localhost:5000"
@@ -167,7 +167,7 @@ SWA CLIの設定ファイルを作成します🛠️
 
 ## 2.4 AccessibilityTests.cs
 
-テストコードを1ファイルにまとめます🎯
+チE��トコードを1ファイルにまとめます🎯
 
 ```csharp
 using System.Text;
@@ -211,7 +211,7 @@ public class AccessibilityTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Blazor標準テンプレートのページ一覧
+    /// Blazor標準テンプレート�Eペ�Eジ一覧
     /// </summary>
     public static TheoryData<string, string> TargetPages => new()
     {
@@ -224,11 +224,11 @@ public class AccessibilityTests : IAsyncLifetime
     [MemberData(nameof(TargetPages))]
     public async Task Page_ShouldHaveNoAccessibilityViolations(string path, string pageName)
     {
-        // 1. ページに遷移
+        // 1. ペ�Eジに遷移
         await _page.GotoAsync($"{_baseUrl}{path}");
         await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        // 2. axe-coreでアクセシビリティ検査を実行
+        // 2. axe-coreでアクセシビリチE��検査を実衁E
         var options = new AxeRunOptions
         {
             RunOnly = new RunOnlyOptions
@@ -240,7 +240,7 @@ public class AccessibilityTests : IAsyncLifetime
 
         var result = await _page.RunAxe(options);
 
-        // 3. 違反があればテストを失敗させる
+        // 3. 違反があれ�EチE��トを失敗させる
         if (result.Violations.Length > 0)
         {
             var message = FormatViolations(pageName, path, result.Violations);
@@ -251,17 +251,17 @@ public class AccessibilityTests : IAsyncLifetime
     [Fact]
     public async Task Counter_AfterInteraction_ShouldBeAccessible()
     {
-        // 1. Counterページに遷移
+        // 1. Counterペ�Eジに遷移
         await _page.GotoAsync($"{_baseUrl}/counter");
         await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        // 2. ボタンを数回クリックしてUIを変化させる
+        // 2. ボタンを数回クリチE��してUIを変化させめE
         var button = _page.Locator("button", new() { HasText = "Click me" });
         await button.ClickAsync();
         await button.ClickAsync();
         await button.ClickAsync();
 
-        // 3. 状態変化後もアクセシビリティを検査
+        // 3. 状態変化後もアクセシビリチE��を検査
         var options = new AxeRunOptions
         {
             RunOnly = new RunOnlyOptions
@@ -275,7 +275,7 @@ public class AccessibilityTests : IAsyncLifetime
 
         if (result.Violations.Length > 0)
         {
-            var message = FormatViolations("Counter（操作後）", "/counter", result.Violations);
+            var message = FormatViolations("Counter�E�操作後！E, "/counter", result.Violations);
             Assert.Fail(message);
         }
     }
@@ -283,14 +283,14 @@ public class AccessibilityTests : IAsyncLifetime
     private static string FormatViolations(string pageName, string path, AxeResultItem[] violations)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"♿ {pageName} ({path}) でアクセシビリティ違反が {violations.Length} 件見つかりました：");
+        sb.AppendLine($"♿ {pageName} ({path}) でアクセシビリチE��違反ぁE{violations.Length} 件見つかりました�E�E);
         sb.AppendLine();
 
         foreach (var violation in violations)
         {
             sb.AppendLine($"【{violation.Impact}】{violation.Id}");
-            sb.AppendLine($"  説明: {violation.Description}");
-            sb.AppendLine($"  ヘルプ: {violation.HelpUrl}");
+            sb.AppendLine($"  説昁E {violation.Description}");
+            sb.AppendLine($"  ヘルチE {violation.HelpUrl}");
 
             foreach (var node in violation.Nodes.Take(3))
             {
@@ -299,7 +299,7 @@ public class AccessibilityTests : IAsyncLifetime
 
             if (violation.Nodes.Length > 3)
             {
-                sb.AppendLine($"  ... 他 {violation.Nodes.Length - 3} 件");
+                sb.AppendLine($"  ... 仁E{violation.Nodes.Length - 3} 件");
             }
             sb.AppendLine();
         }
@@ -309,57 +309,57 @@ public class AccessibilityTests : IAsyncLifetime
 }
 ```
 
-## 2.5 ローカルでテストを実行
+## 2.5 ローカルでチE��トを実衁E
 
-### 方法1: dotnet run で直接起動（シンプル）
+### 方況E: dotnet run で直接起動（シンプル�E�E
 
 開発中はこちらが手軽です🚀
 
 ```powershell
-# Blazor WASMを起動（別ターミナル）
+# Blazor WASMを起動（別ターミナル�E�E
 cd BlazorA11yDemo.Client
 dotnet run
 
-# テストを実行（別ターミナル）
-# ※ appsettings.json の BaseUrl を launchSettings.json のポートに合わせてください
+# チE��トを実行（別ターミナル�E�E
+# ※ appsettings.json の BaseUrl めElaunchSettings.json のポ�Eトに合わせてください
 cd BlazorA11yDemo.Tests
 dotnet test
 ```
 
-### 方法2: SWA CLI でエミュレート（本番に近い環境）
+### 方況E: SWA CLI でエミュレート（本番に近い環墁E��E
 
-認証やルーティングなどSWAの機能を確認したい場合はこちら🔧
+認証めE��ーチE��ングなどSWAの機�Eを確認したい場合�Eこちら🔧
 
 ```powershell
-# Blazor WASMをビルド（リポジトリルートで実行）
+# Blazor WASMをビルド（リポジトリルートで実行！E
 cd BlazorA11yDemo.Client
 dotnet publish -c Release
 
-# SWA CLIでローカルサーバーを起動（別ターミナル、ポート4280）
+# SWA CLIでローカルサーバ�Eを起動（別ターミナル、�EーチE280�E�E
 cd ..
-swa start BlazorA11yDemo.Client/bin/Release/net10.0/publish/wwwroot
+swa start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot
 
-# テストを実行（別ターミナル）
-# ※ appsettings.json の BaseUrl を http://localhost:4280 に変更
+# チE��トを実行（別ターミナル�E�E
+# ※ appsettings.json の BaseUrl めEhttp://localhost:4280 に変更
 cd BlazorA11yDemo.Tests
 dotnet test
 ```
 
 :::message
-**SWA CLIとは？** 💡
+**SWA CLIとは�E�E* 💡
 
-Azure Static Web Apps CLIは、ローカルでSWA環境をエミュレートするツールです。
-認証、ルーティング、API統合など、本番環境と同じ動作をローカルで確認できます。
-デフォルトポートは `4280` です。
+Azure Static Web Apps CLIは、ローカルでSWA環墁E��エミュレートするツールです、E
+認証、ルーチE��ング、API統合など、本番環墁E��同じ動作をローカルで確認できます、E
+チE��ォルト�Eート�E `4280` です、E
 :::
 
 # Step 3: GitHub Actionsでの自動化
 
-Azure Static Web Appsへのデプロイと、アクセシビリティテストを同時に実行するワークフローを作成します🛠️
+Azure Static Web AppsへのチE�Eロイと、アクセシビリチE��チE��トを同時に実行するワークフローを作�Eします🛠�E�E
 
-## 3.1 ワークフローファイルの作成
+## 3.1 ワークフローファイルの作�E
 
-`.github/workflows/azure-static-web-apps.yml` を作成します。
+`.github/workflows/azure-static-web-apps.yml` を作�Eします、E
 
 ```yaml
 name: Azure Static Web Apps CI/CD
@@ -372,11 +372,11 @@ on:
     branches: [main]
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '9.0.x'
 
 jobs:
   # ─────────────────────────────────────────────
-  # アクセシビリティテスト（PRごとに実行）
+  # アクセシビリチE��チE��ト！ERごとに実行！E
   # ─────────────────────────────────────────────
   accessibility_test:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
@@ -405,19 +405,19 @@ jobs:
         run: dotnet publish BlazorA11yDemo.Client -c Release
 
       - name: Install Playwright
-        run: pwsh BlazorA11yDemo.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+        run: pwsh BlazorA11yDemo.Tests/bin/Debug/net9.0/playwright.ps1 install chromium
 
       - name: Start SWA Emulator
         run: |
-          # SWA CLIでポート4280でサーブ（CI環境では固定ポートを使用）
-          Start-Process -FilePath "swa" -ArgumentList "start BlazorA11yDemo.Client/bin/Release/net10.0/publish/wwwroot --port 4280" -NoNewWindow
+          # SWA CLIでポ�EチE280でサーブ！EI環墁E��は固定�Eートを使用�E�E
+          Start-Process -FilePath "swa" -ArgumentList "start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot --port 4280" -NoNewWindow
           Start-Sleep -Seconds 10
         shell: pwsh
 
       - name: Run Accessibility Tests
         run: dotnet test BlazorA11yDemo.Tests --no-build --logger "trx;LogFileName=results.trx"
         env:
-          BaseUrl: 'http://localhost:4280'  # SWA CLIのポートに合わせる
+          BaseUrl: 'http://localhost:4280'  # SWA CLIのポ�Eトに合わせる
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -435,16 +435,16 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## ♿ アクセシビリティテストが失敗しました\n\n[Actionsの結果を確認](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+              body: '## ♿ アクセシビリチE��チE��トが失敗しました\n\n[Actionsの結果を確認](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
             })
 
   # ─────────────────────────────────────────────
-  # Static Web Appsへデプロイ
+  # Static Web AppsへチE�Eロイ
   # ─────────────────────────────────────────────
   deploy:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    needs: accessibility_test  # テスト成功後にデプロイ
+    needs: accessibility_test  # チE��ト�E功後にチE�Eロイ
     name: Deploy to SWA
     
     steps:
@@ -462,11 +462,11 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "BlazorA11yDemo.Client"
-          output_location: "bin/Release/net10.0/publish/wwwroot"
+          output_location: "bin/Release/net9.0/publish/wwwroot"
           app_build_command: "dotnet publish -c Release"
 
   # ─────────────────────────────────────────────
-  # PRクローズ時にプレビュー環境を削除
+  # PRクローズ時にプレビュー環墁E��削除
   # ─────────────────────────────────────────────
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -482,68 +482,68 @@ jobs:
 ```
 
 :::message
-**ワークフローのポイント** 🎯
+**ワークフローのポインチE* 🎯
 
-1. **accessibility_test**: PRごとにアクセシビリティテストを実行（Windows）
-2. **deploy**: テスト成功後にStatic Web Appsへデプロイ（Linux）
-3. **close_pull_request**: PRマージ/クローズ時にプレビュー環境を削除
+1. **accessibility_test**: PRごとにアクセシビリチE��チE��トを実行！Eindows�E�E
+2. **deploy**: チE��ト�E功後にStatic Web AppsへチE�Eロイ�E�Einux�E�E
+3. **close_pull_request**: PRマ�Eジ/クローズ時にプレビュー環墁E��削除
 
-テストが失敗すると `needs: accessibility_test` によりデプロイがブロックされます！
+チE��トが失敗すると `needs: accessibility_test` によりチE�EロイがブロチE��されます！E
 :::
 
-## 3.2 Azure Static Web Appsのセットアップ
+## 3.2 Azure Static Web AppsのセチE��アチE�E
 
-Azure PortalでStatic Web Appsリソースを作成し、`AZURE_STATIC_WEB_APPS_API_TOKEN`を取得してGitHub Secretsに設定します🔐
+Azure PortalでStatic Web Appsリソースを作�Eし、`AZURE_STATIC_WEB_APPS_API_TOKEN`を取得してGitHub Secretsに設定します🔁E
 
-1. Azure Portal → Static Web Apps → 作成
+1. Azure Portal ↁEStatic Web Apps ↁE作�E
 2. GitHubリポジトリを連携
-3. デプロイトークンを取得
-4. GitHub → Settings → Secrets → `AZURE_STATIC_WEB_APPS_API_TOKEN` を追加
+3. チE�Eロイト�Eクンを取征E
+4. GitHub ↁESettings ↁESecrets ↁE`AZURE_STATIC_WEB_APPS_API_TOKEN` を追加
 
-# Step 4: 段階的な導入戦略
+# Step 4: 段階的な導�E戦略
 
-いきなり全ての違反でCIを止めるのは現実的ではありません🧭
+ぁE��なり�Eての違反でCIを止めるのは現実的ではありません🧭
 
-## 段階的なロールアウト
+## 段階的なロールアウチE
 
-| Phase | 期間 | 設定 |
+| Phase | 期間 | 設宁E|
 |-------|------|------|
-| 📊 可視化 | 最初の2週間 | 違反を記録するがCIは落とさない |
-| ⚠️ 重大のみ | 3〜4週目 | Critical/Seriousのみブロック |
-| 🛡️ 全違反 | 5週目以降 | 全ての違反でCIを止める |
+| 📊 可視化 | 最初�E2週閁E| 違反を記録するがCIは落とさなぁE|
+| ⚠�E�E重大のみ | 3、E週目 | Critical/SeriousのみブロチE�� |
+| 🛡�E�E全違反 | 5週目以陁E| 全ての違反でCIを止める |
 
-Phase 1では、テストの最後に `|| true` を追加してCIを落とさないようにします：
+Phase 1では、テスト�E最後に `|| true` を追加してCIを落とさなぁE��ぁE��します！E
 
 ```yaml
 - name: Run Accessibility Tests
   run: dotnet test BlazorA11yDemo.Tests --no-build || true
 ```
 
-# よくある違反と修正方法
+# よくある違反と修正方況E
 
-テストを実行すると、よく以下の違反が検出されます🔍
+チE��トを実行すると、よく以下�E違反が検�Eされます🔁E
 
-## color-contrast（コントラスト不足）
+## color-contrast�E�コントラスト不足�E�E
 
 ```html
 <!-- NG -->
-<p style="color: #999;">薄いグレー</p>
+<p style="color: #999;">薁E��グレー</p>
 
-<!-- OK: 4.5:1以上のコントラスト -->
-<p style="color: #595959;">読みやすいグレー</p>
+<!-- OK: 4.5:1以上�EコントラスチE-->
+<p style="color: #595959;">読みめE��ぁE��レー</p>
 ```
 
-## image-alt（代替テキスト欠落）
+## image-alt�E�代替チE��スト欠落�E�E
 
 ```html
 <!-- NG -->
 <img src="product.jpg">
 
 <!-- OK -->
-<img src="product.jpg" alt="商品名: サンプル商品">
+<img src="product.jpg" alt="啁E��吁E サンプル啁E��">
 ```
 
-## label（フォームラベル欠落）
+## label�E�フォームラベル欠落�E�E
 
 ```html
 <!-- NG -->
@@ -554,43 +554,43 @@ Phase 1では、テストの最後に `|| true` を追加してCIを落とさな
 <input type="email" id="email">
 ```
 
-## button-name（ボタン名欠落）
+## button-name�E��Eタン名欠落�E�E
 
 ```html
 <!-- NG -->
 <button><svg>...</svg></button>
 
 <!-- OK -->
-<button aria-label="メニューを開く"><svg>...</svg></button>
+<button aria-label="メニューを開ぁE><svg>...</svg></button>
 ```
 
-# まとめ
+# まとめE
 
-本記事では、**Blazor WebAssembly + Azure Static Web Apps**を題材に、**Playwright C# + axe-core + GitHub Actions**でアクセシビリティを自動検査する仕組みを構築しました🎯
+本記事では、E*Blazor WebAssembly + Azure Static Web Apps**を題材に、E*Playwright C# + axe-core + GitHub Actions**でアクセシビリチE��を�E動検査する仕絁E��を構築しました🎯
 
-## 実装したこと
+## 実裁E��たこと
 
-1. ✅ Blazor WebAssembly を Static Web Apps にホスト
-2. ✅ SWA CLI でローカルエミュレーション
-3. ✅ Playwright C# + axe-core で WCAG 2.1 AA 検査
-4. ✅ テスト失敗時はデプロイをブロック
-5. ✅ PRごとにプレビュー環境を自動作成
+1. ✁EBlazor WebAssembly めEStatic Web Apps にホスチE
+2. ✁ESWA CLI でローカルエミュレーション
+3. ✁EPlaywright C# + axe-core で WCAG 2.1 AA 検査
+4. ✁EチE��ト失敗時はチE�EロイをブロチE��
+5. ✁EPRごとにプレビュー環墁E��自動作�E
 
-## 次のステップ
+## 次のスチE��チE
 
-- 🔧 認証が必要なページのテスト追加
-- 📊 テスト結果のダッシュボード化
-- 🧪 手動テストとの組み合わせ
+- 🔧 認証が忁E��なペ�EジのチE��ト追加
+- 📊 チE��ト結果のダチE��ュボ�Eド化
+- 🧪 手動チE��トとの絁E��合わぁE
 
-「自動で潰せるものは自動で潰し、人間の判断が必要なものに集中する」🤝
-これがCI/CDでアクセシビリティを担保する意義です♿
+「�E動で潰せるも�Eは自動で潰し、人間�E判断が忁E��なも�Eに雁E��する」🤁E
+これがCI/CDでアクセシビリチE��を担保する意義です♿
 
 ---
 
-## 参考リンク
+## 参老E��ンク
 
 ### Azure Static Web Apps
-- [Azure Static Web Apps ドキュメント](https://learn.microsoft.com/ja-jp/azure/static-web-apps/)
+- [Azure Static Web Apps ドキュメンチE(https://learn.microsoft.com/ja-jp/azure/static-web-apps/)
 - [Deploy a Blazor app on Azure Static Web Apps](https://learn.microsoft.com/azure/static-web-apps/deploy-blazor)
 - [Set up local development for Azure Static Web Apps](https://learn.microsoft.com/azure/static-web-apps/local-development)
 - [SWA CLI - npm](https://www.npmjs.com/package/@azure/static-web-apps-cli)
@@ -599,16 +599,16 @@ Phase 1では、テストの最後に `|| true` を追加してCIを落とさな
 - [Tooling for ASP.NET Core Blazor](https://learn.microsoft.com/aspnet/core/blazor/tooling)
 - [ASP.NET Core Blazor project structure](https://learn.microsoft.com/aspnet/core/blazor/project-structure)
 
-### アクセシビリティテスト
+### アクセシビリチE��チE��チE
 - [Deque.AxeCore.Playwright - NuGet](https://www.nuget.org/packages/Deque.AxeCore.Playwright)
 - [axe-core NuGet packages - GitHub](https://github.com/dequelabs/axe-core-nuget)
 - [axe-core Rules](https://github.com/dequelabs/axe-core/blob/master/doc/rule-descriptions.md)
 - [Playwright for .NET](https://playwright.dev/dotnet/)
 
-### アクセシビリティ基準
-- [WCAG 2.1 達成基準（日本語）](https://waic.jp/docs/WCAG21/)
+### アクセシビリチE��基溁E
+- [WCAG 2.1 達�E基準（日本語）](https://waic.jp/docs/WCAG21/)
 - [Web Content Accessibility Guidelines - Microsoft Compliance](https://learn.microsoft.com/compliance/regulatory/offering-wcag-2-1)
 
-### 関連記事
-- [前回の記事: Webアクセシビリティは"もしも"に備える設計](https://zenn.dev/tomokusaba/articles/93810f232cec91)
+### 関連記亁E
+- [前回の記亁E WebアクセシビリチE��は"もしめEに備える設訁E(https://zenn.dev/tomokusaba/articles/93810f232cec91)
 
