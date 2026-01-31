@@ -46,9 +46,9 @@ jobs:
       - name: Start SWA Emulator
         run: |
           # SWA CLIでポート4280でサーブ（CI環境では固定ポートを使用）
-          Start-Process -FilePath "swa" -ArgumentList "start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot --port 4280" -NoNewWindow
-          Start-Sleep -Seconds 10
-        shell: pwsh
+          npx --yes @azure/static-web-apps-cli start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot --port 4280 &
+          sleep 15
+        shell: bash
 
       - name: Run Accessibility Tests
         run: dotnet test BlazorA11yDemo.Tests --no-build --logger "trx;LogFileName=results.trx"
