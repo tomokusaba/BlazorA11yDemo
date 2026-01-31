@@ -439,12 +439,12 @@ jobs:
             })
 
   # ─────────────────────────────────────────────
-  # Static Web AppsへチE�Eロイ
+  # Static Web Appsへデプロイ
   # ─────────────────────────────────────────────
   deploy:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    needs: accessibility_test  # チE��ト�E功後にチE�Eロイ
+    needs: accessibility_test  # テスト成功後にデプロイ
     name: Deploy to SWA
     
     steps:
@@ -455,18 +455,20 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Publish Blazor WASM
+        run: dotnet publish BlazorA11yDemo.Client -c Release -o publish
+
       - name: Build And Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "BlazorA11yDemo.Client"
-          output_location: "bin/Release/net9.0/publish/wwwroot"
-          app_build_command: "dotnet publish -c Release"
+          app_location: "publish/wwwroot"
+          skip_app_build: true
 
   # ─────────────────────────────────────────────
-  # PRクローズ時にプレビュー環墁E��削除
+  # PRクローズ時にプレビュー環境を削除
   # ─────────────────────────────────────────────
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
