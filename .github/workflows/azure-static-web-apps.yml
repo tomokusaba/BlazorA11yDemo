@@ -38,7 +38,15 @@ jobs:
         run: dotnet build
 
       - name: Publish Blazor WASM
-        run: dotnet publish BlazorA11yDemo.Client -c Release
+        run: dotnet publish BlazorA11yDemo.Client -c Release -o ./publish
+
+      - name: Verify publish output
+        run: |
+          echo "=== Publish output contents ==="
+          ls -la ./publish/wwwroot/
+          echo "=== Checking index.html ==="
+          head -20 ./publish/wwwroot/index.html
+        shell: bash
 
       - name: Install Playwright
         run: pwsh BlazorA11yDemo.Tests/bin/Debug/net9.0/playwright.ps1 install chromium
@@ -46,8 +54,12 @@ jobs:
       - name: Start SWA Emulator
         run: |
           # SWA CLIでポート4280でサーブ（CI環境では固定ポートを使用）
-          npx --yes @azure/static-web-apps-cli start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot --port 4280 &
-          sleep 15
+          echo "Starting SWA CLI..."
+          npx --yes @azure/static-web-apps-cli start ./publish/wwwroot --port 4280 &
+          echo "Waiting for SWA CLI to start..."
+          sleep 30
+          echo "Testing if server is responding..."
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:4280 || true
         shell: bash
 
       - name: Run Accessibility Tests
