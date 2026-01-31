@@ -1,0 +1,12 @@
+{
+  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
+  "configurations": {
+    "blazor-a11y": {
+      "appLocation": "BlazorA11yDemo.Client",
+      "outputLocation": "bin/Release/net10.0/publish/wwwroot",
+      "appBuildCommand": "dotnet publish -c Release",
+      "run": "dotnet watch run",
+      "appDevserverUrl": "http://localhost:5000"
+    }
+  }
+}
