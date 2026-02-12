@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Fxkz+jXGzVA=",
+  "dgSpecHash": "QFjVOzpuvDM=",
   "success": true,
   "projectFilePath": "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Tests\\BlazorA11yDemo.Tests.csproj",
   "expectedPackageFiles": [
@@ -37,7 +37,10 @@
     "C:\\Users\\tomo_\\.nuget\\packages\\xunit.core\\2.9.3\\xunit.core.2.9.3.nupkg.sha512",
     "C:\\Users\\tomo_\\.nuget\\packages\\xunit.extensibility.core\\2.9.3\\xunit.extensibility.core.2.9.3.nupkg.sha512",
     "C:\\Users\\tomo_\\.nuget\\packages\\xunit.extensibility.execution\\2.9.3\\xunit.extensibility.execution.2.9.3.nupkg.sha512",
-    "C:\\Users\\tomo_\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512"
+    "C:\\Users\\tomo_\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.12\\microsoft.netcore.app.ref.9.0.12.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.12\\microsoft.windowsdesktop.app.ref.9.0.12.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.12\\microsoft.aspnetcore.app.ref.9.0.12.nupkg.sha512"
   ],
   "logs": []
 }

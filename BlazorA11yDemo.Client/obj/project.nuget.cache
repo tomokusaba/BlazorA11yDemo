@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Nd1ypvMWZtc=",
+  "dgSpecHash": "eRm7TkGQgyI=",
   "success": true,
   "projectFilePath": "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\BlazorA11yDemo.Client.csproj",
   "expectedPackageFiles": [
@@ -29,8 +29,10 @@
     "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.jsinterop\\9.0.2\\microsoft.jsinterop.9.0.2.nupkg.sha512",
     "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.jsinterop.webassembly\\9.0.2\\microsoft.jsinterop.webassembly.9.0.2.nupkg.sha512",
     "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.net.illink.tasks\\9.0.12\\microsoft.net.illink.tasks.9.0.12.nupkg.sha512",
-    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.net.sdk.webassembly.pack\\10.0.2\\microsoft.net.sdk.webassembly.pack.10.0.2.nupkg.sha512",
-    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.netcore.app.runtime.mono.browser-wasm\\9.0.12\\microsoft.netcore.app.runtime.mono.browser-wasm.9.0.12.nupkg.sha512"
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.net.sdk.webassembly.pack\\10.0.3\\microsoft.net.sdk.webassembly.pack.10.0.3.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.netcore.app.runtime.mono.browser-wasm\\9.0.13\\microsoft.netcore.app.runtime.mono.browser-wasm.9.0.13.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.12\\microsoft.windowsdesktop.app.ref.9.0.12.nupkg.sha512",
+    "C:\\Users\\tomo_\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.12\\microsoft.aspnetcore.app.ref.9.0.12.nupkg.sha512"
   ],
   "logs": []
 }
