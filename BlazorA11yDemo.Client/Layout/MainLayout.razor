@@ -1,15 +1,17 @@
 ﻿@inherits LayoutComponentBase
 <div class="page">
+    <a href="#main-content" class="skip-link">メインコンテンツへスキップ</a>
+
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" rel="noopener noreferrer">About<span class="visually-hidden"> (新しいウィンドウで開きます)</span></a>
         </div>
 
-        <article class="content px-4">
+        <article id="main-content" class="content px-4">
             @Body
         </article>
     </main>

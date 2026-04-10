@@ -3,7 +3,30 @@ html, body {
 }
 
 h1:focus {
-    outline: none;
+    outline: 2px solid #258cfb;
+    outline-offset: 2px;
+}
+
+/* スキップリンク */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    background: #1b6ec2;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    z-index: 1100;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* WCAG 2.4.11: フォーカスが sticky ヘッダーで隠れないようにする */
+html {
+    scroll-padding-top: 4rem;
 }
 
 a, .btn-link {

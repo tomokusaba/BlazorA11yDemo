@@ -62,7 +62,7 @@ public class AccessibilityTests : IAsyncLifetime
             RunOnly = new RunOnlyOptions
             {
                 Type = "tag",
-                Values = ["wcag2a", "wcag2aa", "wcag21aa"]
+                Values = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]
             }
         };
 
@@ -95,7 +95,7 @@ public class AccessibilityTests : IAsyncLifetime
             RunOnly = new RunOnlyOptions
             {
                 Type = "tag",
-                Values = ["wcag2a", "wcag2aa", "wcag21aa"]
+                Values = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]
             }
         };
 

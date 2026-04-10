@@ -16,17 +16,17 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
+        <svg class="loading-progress" role="img" aria-label="読み込み中">
             <circle r="40%" cx="50%" cy="50%" />
             <circle r="40%" cx="50%" cy="50%" />
         </svg>
-        <div class="loading-progress-text"></div>
+        <div class="loading-progress-text" aria-live="polite"></div>
     </div>
 
-    <div id="blazor-error-ui">
+    <div id="blazor-error-ui" role="alert">
         An unhandled error has occurred.
         <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+        <span class="dismiss" role="button" aria-label="エラーメッセージを閉じる">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
