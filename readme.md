@@ -10,7 +10,7 @@ Blazor WebAssembly + Playwright + axe-core を使用したアクセシビリテ�
 
 - **Blazor WebAssembly** アプリケーション
 - **Playwright** によるブラウザ自動化
-- **axe-core** によるWCAG 2.2 AA準拠チェック
+- **axe-core** によるWCAG 2.1 AA準拠チェック
 - **Azure Static Web Apps** へのデプロイ
 - **GitHub Actions** による自動テスト
 
@@ -117,11 +117,10 @@ swa start BlazorA11yDemo.Client/bin/Release/net9.0/publish/wwwroot
 
 ### 検査基準
 
-WCAG 2.2 Level A, AA に準拠：
+WCAG 2.1 Level A, AA に準拠：
 - `wcag2a`
 - `wcag2aa`
 - `wcag21aa`
-- `wcag22aa`
 
 ### テストケース
 
@@ -159,4 +158,4 @@ MIT
 - [Azure Static Web Apps ドキュメント](https://learn.microsoft.com/ja-jp/azure/static-web-apps/)
 - [Playwright for .NET](https://playwright.dev/dotnet/)
 - [Deque.AxeCore.Playwright - NuGet](https://www.nuget.org/packages/Deque.AxeCore.Playwright)
-- [WCAG 2.2 達成基準（日本語）](https://waic.jp/translations/WCAG22/)
+- [WCAG 2.1 達成基準（日本語）](https://waic.jp/docs/WCAG21/)

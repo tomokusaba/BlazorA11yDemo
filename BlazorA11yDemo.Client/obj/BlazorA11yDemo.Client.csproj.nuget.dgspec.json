@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "/home/runner/work/BlazorA11yDemo/BlazorA11yDemo/BlazorA11yDemo.Client/BlazorA11yDemo.Client.csproj": {}
+    "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\BlazorA11yDemo.Client.csproj": {}
   },
   "projects": {
-    "/home/runner/work/BlazorA11yDemo/BlazorA11yDemo/BlazorA11yDemo.Client/BlazorA11yDemo.Client.csproj": {
+    "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\BlazorA11yDemo.Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/runner/work/BlazorA11yDemo/BlazorA11yDemo/BlazorA11yDemo.Client/BlazorA11yDemo.Client.csproj",
+        "projectUniqueName": "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\BlazorA11yDemo.Client.csproj",
         "projectName": "BlazorA11yDemo.Client",
-        "projectPath": "/home/runner/work/BlazorA11yDemo/BlazorA11yDemo/BlazorA11yDemo.Client/BlazorA11yDemo.Client.csproj",
-        "packagesPath": "/home/runner/.nuget/packages/",
-        "outputPath": "/home/runner/work/BlazorA11yDemo/BlazorA11yDemo/BlazorA11yDemo.Client/obj/",
+        "projectPath": "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\BlazorA11yDemo.Client.csproj",
+        "packagesPath": "C:\\Users\\tomo_\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\tomo_\\source\\repos\\BlazorA11yDemo\\BlazorA11yDemo.Client\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/home/runner/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\tomo_\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -56,13 +62,13 @@
             "Microsoft.NET.ILLink.Tasks": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[9.0.14, )",
+              "version": "[9.0.12, )",
               "autoReferenced": true
             },
             "Microsoft.NET.Sdk.WebAssembly.Pack": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.5, )",
+              "version": "[10.0.3, )",
               "autoReferenced": true
             }
           },
@@ -79,8 +85,16 @@
           "warn": true,
           "downloadDependencies": [
             {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.12, 9.0.12]"
+            },
+            {
               "name": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-              "version": "[9.0.14, 9.0.14]"
+              "version": "[9.0.13, 9.0.13]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.12, 9.0.12]"
             }
           ],
           "frameworkReferences": {
@@ -88,7 +102,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200-preview.0.26103.119/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {
