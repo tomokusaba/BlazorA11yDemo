@@ -46,7 +46,7 @@ jobs:
         run: |
           # npx serveでBlazor WASMをサーブ（ポート4280）
           echo "Starting HTTP server on port 4280..."
-          npx --yes serve ./publish/wwwroot -l 4280 &
+          npx --yes serve ./publish/wwwroot -l 4280 -s &
           SERVER_PID=$!
           echo "Server PID: $SERVER_PID"
           
